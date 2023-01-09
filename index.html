@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="style.css">
+	<script src="OpenTypeJS/dist/opentype.js"></script>
+	<script src="js/fontData.js"></script>
+	<script>
+		async function StageFile(file){
+			let Reader = new FileReader();
+			
+			const div = document.createElement('img');
+			document.body.appendChild(div);
+			
+			/*Read file*/
+			Reader.readAsArrayBuffer(file.files[0]);
+			Reader.onload = (e) => {
+				let fontfile = opentype.parse(e.target.result);
+				extractFontData(fontfile);
+			};
+		}
+
+		async function Test(){
+			let fontFile = await opentype.load('font/Archivo-Regular.ttf');
+			let fontInfo = extractFontData(fontFile);
+			appendText(objectToHTML(fontInfo), document.body);
+		}
+
+		Test();
+	</script>
+</head>
+<body>
+	<h1>Font Analyser</h1>
+	<p>Get data from font files</p>
+	<form>
+		<input type="file" name="fontFile" id="fontFileInput" onchange="StageFile(fontFile)">
+		<input type="submit" value="Analyse">
+	</form>
+	
+</body>
+</html>

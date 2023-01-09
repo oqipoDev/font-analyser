@@ -1,0 +1,8 @@
+.[Vv][Ss][Cc]ode/
+.git/
+
+# Libraries
+[Oo]pen[Tt]ype[Jj][Ss]/
+
+# Temp files
+[Ff]ont/
