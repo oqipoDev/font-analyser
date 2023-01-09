@@ -1,2 +1,2 @@
 # font-analyser
- A font data analyser for Web Specimen
+ A font data analyser for [Web Specimen](https://github.com/oqipoDev/web-specimen)
