@@ -2,6 +2,14 @@ function extractFontData(font){
 	/*console.log(font);*/
 
 	let fontData = new Object();
+	let errors = [];
+	let warnings = [];
+
+	function propertyOrGlyphSize(property, char, axis, max, notEqual){
+		if (property == undefined){
+			warnings = warnings.concat(property);
+		}
+	}
 
 	/* NAMES */
 
@@ -35,14 +43,53 @@ function extractFontData(font){
 	/* Measurements */
 	measurements = new Object();
 	
-	let height = ( font.ascender - font.descender );
+	let height = (font.ascender - font.descender);
 	measurements.baselineHeight = -font.descender / height;
-	measurements.xHeight = font.tables.os2.sxHeight / height;
-	measurements.capHeight = font.tables.os2.sCapHeight / height;
-	measurements.ascender = font.tables.os2.sTypoAscender / height;
+
+	if (font.tables.os2.sxHeight){
+		measurements.xHeight = font.tables.os2.sxHeight / height;
+	}
+	else {
+		warnings = warnings.concat("xH");
+		if (getCharSize(x)){
+			measurements.xHeight = getCharSize('x').yMax / height;
+		}
+		else errors = errors.concat("xH");
+	}
+
+	if (font.tables.os2.sCapHeight){
+		measurements.capHeight = font.tables.os2.sCapHeight / height;
+	}
+	else {
+		warnings = warnings.concat("capH");
+		if (getCharSize(x)){
+			measurements.xHeight = getCharSize('H').yMax / height;
+		}
+		else errors = errors.concat("capH");
+	}
+
+	if (font.tables.os2.sTypoAscender == font.ascender){
+		measurements.ascender = getCharSize('H', font).yMax / height;
+		warnings = warnings.concat('asc');
+		if (measurements.ascender == font.ascender){
+			errors = errors.concat("asc");
+		}
+	}
+	else measurements.ascender = font.tables.os2.sTypoAscender / height;
+	
+	if (font.tables.os2.sTypoDescender == font.descender){
+		measurements.descender = -getCharSize('p', font).yMmin / height;
+		warnings = warnings.concat("desc");
+		if (measurements.descender == font.descender){ 
+			errors = errors.concat("desc");
+		}
+	}
+	else measurements.descender = font.tables.os2.sTypoDecender / height;
+	
 	measurements.descender = -font.tables.os2.sTypoDescender / height;
 	measurements.strikeoutHeight = font.tables.os2.yStrikeoutPosition / height;
 	measurements.mWidth = font.unitsPerEm / height;
+	measurements.gap = font.tables.os2.sTypoLineGap / height;
 	
 	/* Family data */
 	let familyData = new Object();
@@ -69,7 +116,7 @@ function extractFontData(font){
 
 	familyData.isVariable = font.tables.fvar ? true : false;
 	
-	return {fontData, styleRaw, measurements, familyData};
+	return {fontData, styleRaw, measurements, familyData, errors, warnings};
 }
 
 /**
@@ -113,33 +160,29 @@ function objectToHTML(dataObject, firstHeading){
 		}
 		text += `</ul>`
 	}
-	/*
-	
-	for(const key in fontData.fontData){
-		text += `<b>${camelToDisplay(key)}</b>: ${fontData.fontData[key]}<br>`;
-	}
-
-	text += "</p><h3>Style:</h3><p>";
-
-	for(const key in fontData.styleRaw){
-		text += `<b>${camelToDisplay(key)}</b>: ${fontData.styleRaw[key]}<br>`;
-	}
-	
-	text += "</p><h3>Sizing:</h3><p>";
-
-	for(const key in fontData.measurements){
-		text += `<b>${camelToDisplay(key)}</b>: ${fontData.measurements[key]}<br>`;
-	}
-	
-	text += "</p><h2>About the family:</h2><p>";
-
-	for(const key in fontData.familyData){
-		text += `<b>${camelToDisplay(key)}</b>: ${fontData.familyData[key]}<br>`;
-	}
-	*/
 	
 	text += "</p>";
 	return text;
+}
+
+function getCharSize(char, font){
+	var ucode = char.charCodeAt(0);
+	var charInfo = font.glyphs.glyphs[0];
+
+	for(i in font.glyphs.glyphs){
+
+		if (font.glyphs.glyphs[i].unicode == ucode){
+			charInfo = font.glyphs.glyphs[i];
+		}
+	}
+	
+	var ret = {};
+	ret.xMax = charInfo.xMax;
+	ret.xMin = charInfo.xMin;
+	ret.yMax = charInfo.yMax;
+	ret.yMin = charInfo.yMin;
+
+	return ret;
 }
 
 /**
@@ -153,7 +196,7 @@ function appendText(string, parentElement, clas){
 	div.innerHTML = string;
 	parentElement.appendChild(div);
 
-	if(elementClass) div.classList.add(clas);
+	if(clas) div.classList.add(clas);
 }
 
 /**
