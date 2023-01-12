@@ -5,118 +5,147 @@ function extractFontData(font){
 	let errors = [];
 	let warnings = [];
 
-	function propertyOrGlyphSize(property, char, axis, max, notEqual){
-		if (property == undefined){
-			warnings = warnings.concat(property);
+	/**
+	 * Returns _property_ if found, measures a _glyph_ otherwise. Returns _null_ if no glyph is found.
+	 * @param {any} property The value to check for 
+	 * @param {string} propName For error reports
+	 * @param {string} char Character of glyph, measured as fallback
+	 * @param {key} charKey Any of [xMin, xMax, yMin, yMax]
+	 * @param {any} notEqual (Optional) Forces glyph measurement if it's equal to property
+	 */
+	function propertyOrGlyphSize(property, propName, char, charKey, notEqual){
+		if (property == undefined || property == notEqual){
+			if(getCharSize(char, font)){
+				warnings = warnings.concat(propName);
+				return getCharSize(char, font)[charKey];
+			}
+
+			else {
+				errors = errors.concat(propName);
+				return null;
+			}
 		}
+		else return property;
 	}
 
 	/* NAMES */
 
 	/*ToDo accept other languages*/
 	fontData.ID = font.names.uniqueID.en;
+	
+	if (font.names.preferredFamily) fontData.familyName = font.names.preferredFamily.en;
+	else fontData.fontFamily = font.names.fontFamily.en;
+	
+	fontData.designerName = font.names.designer.en;
+	if (font.names.designerURL) fontData.designerURL = font.names.designerURL.en;
+	fontData.foundryName = font.names.manufacturer.en;
+	if (font.names.manufacturerURL) fontData.foundryURL = font.names.manufacturerURL.en;
+	if (font.names.copyright) fontData.copyright = font.names.copyright.en;
+	if (font.names.trademark) fontData.trademark = font.names.trademark.en;
+	fontData.licenseType = font.tables.os2.fsType;
+	fontData.license = font.names.license.en;
+	if (font.names.licenseURL) fontData.licenseURL = font.names.licenseURL.en;
+	if (font.names.sampleText) fontData.sampleText = font.names.sampleText.en;
+	if (font.names.description) fontData.description = font.names.description.en;
 	fontData.version = font.names.version.en;
 
-	fontData.fullName = font.names.fullName.en;
 	
-	if (font.names.preferredFamily){
-		fontData.familyName = font.names.preferredFamily.en;
-	}
-	else fontData.fontFamily = font.names.fontFamily.en;
+	let macStyle = NumToPseudoBoolArray(font.tables.head.macStyle, 8);
+	let fsSelection = NumToPseudoBoolArray(font.tables.os2.fsSelection, 10);
+	fontData.panoseStyle = font.tables.os2.panose;
 
-	if (font.names.preferredSubfamily){
-		fontData.familySubname = font.names.preferredSubfamily.en;
-	}
-	else fontData.fontSubfamily = font.names.fontSubfamily.en;
+	
 
-	/* Raw style, gonna be used to assist in font submission */
-	
-	styleRaw = new Object();
-	
-	if(font.tables.fvar){ console.log("variable font currently unsupported"); }
-	else{
-		styleRaw.macStyle = NumToPseudoBoolArray(font.tables.head.macStyle, 8);
-		styleRaw.fsSelection = NumToPseudoBoolArray(font.tables.os2.fsSelection);
-		styleRaw.panose = font.tables.os2.panose;
+	/* Variable font */
+	fontData.isVariable = font.tables.fvar ? true : false;
+
+	function getAxis(axis){
+		let retAxis = {};
+
+		retAxis.type = axis.tag;
+		retAxis.default = axis.defaultValue;
+		retAxis.min = axis.minValue;
+		retAxis.max = axis.maxValue;
+
+		return retAxis;
 	}
+	
+	if(fontData.isVariable){
+		fontData.axes = [];
+		for(let i = 0; i < font.tables.fvar.axes.length; i++){
+			fontData.axes = fontData.axes.concat(getAxis(font.tables.fvar.axes[i]));
+		}
+	}
+	else { /* Fixed fonts */
+		if (font.names.preferredSubfamily) fontData.styleName = font.names.preferredSubfamily.en;
+		else fontData.styleName = font.names.fontSubfamily.en;
+		
+		fontData.weightClass = font.tables.os2.usWeightClass;
+
+		if (macStyle[0] && fsSelection[5])		fontData.weight = 'Bold'; 
+		else if (macStyle[0] || fsSelection[5]){
+			fontData.weight = 'Bold';
+			warnings = warnings.concat('weig');
+		}
+		else fontData.weight = 'Regular';
+
+		fontData.slantType = macStyle[1] + fsSelection[0];
+
+		if (macStyle[1] && fsSelection[0])		fontData.slantType = 'Italic'; 
+		else if (macStyle[1] && fsSelection[9])		fontData.slantType = 'Oblique'; 
+		else if (macStyle[1] || fsSelection[0] || fsSelection[9]){
+			fontData.slantType = 'Italic';
+			warnings = warnings.concat('slnt');
+		}
+		else fontData.slantType = 'Roman';
+
+		if (macStyle[5]) fontData.width = 'Condensed';
+		else if (macStyle[6]) fontData.width = 'Expanded';
+		else fontData.width = 'Normal';
+
+		fontData.widthClass = font.tables.os2.usWidthClass;
+	}
+
+
+	if(font.tables.head.lowestRecPPEM) fontData.minSize = font.tables.head.lowestRecPPEM;
+
+	fontData.unicodeRange = NumToPseudoBoolArray(font.tables.os2.ulUnicodeRange1);
+	fontData.glyphNum = font.numGlyphs;
 
 	/* Measurements */
-	measurements = new Object();
-	
 	let height = (font.ascender - font.descender);
-	measurements.baselineHeight = -font.descender / height;
 
-	if (font.tables.os2.sxHeight){
-		measurements.xHeight = font.tables.os2.sxHeight / height;
+	fontData.topBound = font.ascender / height;
+	fontData.bottomBound = -font.descender / height;
+	fontData.baseline = -font.descender / height;
+	/* Ascender */
+	fontData.ascender = propertyOrGlyphSize(font.tables.os2.sTypoAscender, "ascH", 'h', 'yMax', font.ascender) / height;
+	/* Descender */
+	fontData.descender = -propertyOrGlyphSize(font.tables.os2.sTypoDescender, "desH", 'p', 'yMin', font.descender) / height;
+	/* Cap Height */
+	fontData.capHeight = propertyOrGlyphSize(font.tables.os2.sCapHeight, "capH", 'H', 'yMax') / height;
+	/* x Height */
+	fontData.xHeight = propertyOrGlyphSize(font.tables.os2.sxHeight, "xHei", 'x', 'yMax') / height;
+
+	fontData.strikeout = font.tables.os2.yStrikeoutPosition / height;
+	fontData.underline = -font.tables.post.underlinePosition / height;
+	
+	fontData.avgWidth = font.tables.os2.xAvgCharWidth / height;
+	fontData.mWidth = font.unitsPerEm / height;
+	fontData.nWidth = (getCharSize('n', font).xMax - getCharSize('n', font).xMin) / height;
+	fontData.iWidth = (getCharSize('i', font).xMax - getCharSize('i', font).xMin) / height;
+	fontData.oWidth = (getCharSize('o', font).xMax - getCharSize('o', font).xMin) / height;
+
+	/* Gap */
+	if(font.tables.os2.sTypoLineGap != 0){
+		fontData.gap = font.tables.os2.sTypoLineGap / height;
 	}
 	else {
-		warnings = warnings.concat("xH");
-		if (getCharSize(x)){
-			measurements.xHeight = getCharSize('x').yMax / height;
-		}
-		else errors = errors.concat("xH");
+		fontData.gap = 1 - (fontData.ascender + fontData.descender);
+		warnings = warnings.concat('gap');
 	}
-
-	if (font.tables.os2.sCapHeight){
-		measurements.capHeight = font.tables.os2.sCapHeight / height;
-	}
-	else {
-		warnings = warnings.concat("capH");
-		if (getCharSize(x)){
-			measurements.xHeight = getCharSize('H').yMax / height;
-		}
-		else errors = errors.concat("capH");
-	}
-
-	if (font.tables.os2.sTypoAscender == font.ascender){
-		measurements.ascender = getCharSize('H', font).yMax / height;
-		warnings = warnings.concat('asc');
-		if (measurements.ascender == font.ascender){
-			errors = errors.concat("asc");
-		}
-	}
-	else measurements.ascender = font.tables.os2.sTypoAscender / height;
 	
-	if (font.tables.os2.sTypoDescender == font.descender){
-		measurements.descender = -getCharSize('p', font).yMmin / height;
-		warnings = warnings.concat("desc");
-		if (measurements.descender == font.descender){ 
-			errors = errors.concat("desc");
-		}
-	}
-	else measurements.descender = font.tables.os2.sTypoDecender / height;
-	
-	measurements.descender = -font.tables.os2.sTypoDescender / height;
-	measurements.strikeoutHeight = font.tables.os2.yStrikeoutPosition / height;
-	measurements.mWidth = font.unitsPerEm / height;
-	measurements.gap = font.tables.os2.sTypoLineGap / height;
-	
-	/* Family data */
-	let familyData = new Object();
-
-	if (font.names.description){
-		familyData.description = font.names.description.en; }
-	
-	if (font.names.sampleText){
-		familyData.sampleText = font.names.sampleText.en; }
-	
-	if (font.names.copyright) familyData.copyright = font.names.copyright.en;
-	if (font.names.trademark) familyData.trademark = font.names.trademark.en;
-	
-	familyData.foundry = font.names.manufacturer.en;
-	if (font.names.manufacturerURL) familyData.foundryURL = font.names.manufacturerURL.en;
-
-	familyData.designer = font.names.designer.en;
-	if (font.names.designerURL) familyData.designerURL = font.names.designerURL.en;
-
-	familyData.license = font.names.license.en;
-	if (font.names.licenseURL) familyData.licenseURL = font.names.licenseURL.en;
-	
-	familyData.licenseType = font.tables.os2.fsType;
-
-	familyData.isVariable = font.tables.fvar ? true : false;
-	
-	return {fontData, styleRaw, measurements, familyData, errors, warnings};
+	return {fontData, errors, warnings};
 }
 
 /**
@@ -131,6 +160,32 @@ function objectToHTML(dataObject, firstHeading){
 
 	LoopObject(dataObject);
 
+	function LoopArray(arr){
+		if (arr.length == 0) return;
+
+		switch (arr[0].constructor){
+			case Object:
+				for(i in arr){
+					text += "<li>";
+					LoopObject(arr[i]);
+					text += "</li>";
+				}
+				break;
+			case Array:
+				for(i in arr){
+					text += "<li>";
+					LoopArray(arr[i]);
+					text += "</li>";
+				}
+				break;
+			default:
+				for(i in arr){
+					text += `<li>${arr[i]}</li>`;
+				}
+				break;
+			}
+	}
+
 	function LoopObject(obj){
 		let objs = [];
 		let props = [];
@@ -141,15 +196,23 @@ function objectToHTML(dataObject, firstHeading){
 			if(obj[key].constructor == Object){
 				objs = objs.concat(key);
 			}
+			else if (obj[key].constructor == Array){
+				arrs = arrs.concat(key);
+			}
 			else {
 				props = props.concat(key);
 			}
 		}
 
-		/* Todo maybe on a list */
 		text += `<ul>`;
 		for(const i in props){
-			text += `<li><b>${camelToDisplay(props[i])}</b>: ${obj[props[i]]}</li>`;
+			text += `<li><b>${camelToDisplay(props[i])}:</b>${obj[props[i]]}</li>`;
+		}
+
+		for(const i in arrs){
+			text += `<li><b>${camelToDisplay(arrs[i])}:</b><ol>`;
+			LoopArray(obj[arrs[i]]);
+			text += `</ol></li>`
 		}
 		
 		for(const i in objs){
@@ -165,6 +228,12 @@ function objectToHTML(dataObject, firstHeading){
 	return text;
 }
 
+/**
+ * Returns size info of a character
+ * @param {string} char Glyph character
+ * @param {Object} font Font to get glyph
+ * @returns \{ xMax, xMin, yMax, yMin }
+ */
 function getCharSize(char, font){
 	var ucode = char.charCodeAt(0);
 	var charInfo = font.glyphs.glyphs[0];
@@ -211,13 +280,15 @@ function NumToPseudoBoolArray(num, places){
 	let arr = []
 
 	for(let i = numToStr.length - 1; i >= 0; i--){
-		arr = arr.concat(numToStr[i]);
+		if (numToStr[i] == 1)
+			arr = arr.concat(true);
+		else arr = arr.concat(false);
 	}
 	
 	/* Pad with 0's */
 	if (places){
 		while(arr.length < places){
-			arr = arr.concat("0");
+			arr = arr.concat(false);
 		}
 	}
 	
