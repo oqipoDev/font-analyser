@@ -6,3 +6,34 @@ body{
 	margin-bottom: 0.25em;
 	margin-top: 0.5em;
 }
+
+ul{
+	margin: 0.5ch;
+	border-left: solid black 1px;
+	border-bottom-left-radius: 1ch;
+}
+
+ul > li{
+	display: grid;
+	grid-template-columns: 1fr 6fr;
+	gap: 1ch;
+}
+
+ul > li > b{
+	text-align: right;
+}
+
+li > ol{
+	margin: 0.5ch;
+	margin-left: 1ch;
+
+	border-radius: 0.5ch;
+	border-left: solid black 1px;
+
+	max-height: 40vw;
+	overflow-y: auto;
+}
+
+ol > li > ul{
+	padding-left: 0;
+}
