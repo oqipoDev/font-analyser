@@ -9,7 +9,7 @@ function extractFontData(font){
 	 * Returns _property_ if found, measures a _glyph_ otherwise. Returns _null_ if no glyph is found.
 	 * @param {any} property The value to check for 
 	 * @param {string} propName For error reports
-	 * @param {string} char Character of glyph, measured as fallback
+	 * @param {string} char Character of glyph, measured as fallback for _property_
 	 * @param {key} charKey Any of [xMin, xMax, yMin, yMax]
 	 * @param {any} notEqual (Optional) Forces glyph measurement if it's equal to property
 	 */
@@ -53,8 +53,8 @@ function extractFontData(font){
 	let macStyle = NumToPseudoBoolArray(font.tables.head.macStyle, 8);
 	let fsSelection = NumToPseudoBoolArray(font.tables.os2.fsSelection, 10);
 	fontData.panoseStyle = font.tables.os2.panose;
+	fontData.IBMStyle = font.tables.os2.sFamilyClass;
 
-	
 
 	/* Variable font */
 	fontData.isVariable = font.tables.fvar ? true : false;
