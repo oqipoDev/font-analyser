@@ -49,13 +49,14 @@
 		}
 		
 		function finishReading(){
-			console.log("success");
-			document.querySelector('#scanButton').disabled = false;
+			let button = document.querySelector('#downloadButton')
+			button.disabled = false;
 			
 			let fontInfoArr = JSON.parse(sessionStorage.getItem('infoArr'));
 			let textbox = document.createElement('textarea');
 			document.body.appendChild(textbox);
 			textbox.value = prettifyJSON(JSON.stringify(fontInfoArr));
+			saveObjectAsJSON(fontInfoArr, 'font-info', button, true);
 		}
 	</script>
 </head>
@@ -66,7 +67,7 @@
 		<input type="file" name="fontFile"
 			id="fontFileInput" multiple="true"
 			accept=".ttf,.otf,.woff" onchange="StageFile(fontFile)">
-		<button id="scanButton" type="button" onclick="Scan()" disabled>Lmao</button>
+		<a id="downloadButton" type="button">Download</a>
 	</form>
 	<div id="fileNames"></div>
 </body>

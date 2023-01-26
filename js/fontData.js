@@ -334,7 +334,6 @@ function prettifyJSON(str){
 		for (let i = 0; i < level; i++) {
 			result += '\t';
 		}
-		console.log(level);
 	}
 
 	let level = 0;
@@ -359,6 +358,37 @@ function prettifyJSON(str){
 			result += str[i];
 		}
 	}
-
+	
 	return result;
+}
+
+/**
+ * Sets a download button for an object as a JSON file.
+ * Set _button_ param to _false_ to automatically download.
+ * @param {Object} obj Object to convert to JSON
+ * @param {String} name Name of file, no extension
+ * @param {Element} button _(optional)_ Download link or button
+ * @param {Boolean} prettify Format with line breaks and indentations.
+ */
+function saveObjectAsJSON(obj, name, button, prettify){
+	//Create data
+	let rawStr = JSON.stringify(obj);
+	if (prettify) rawStr = prettifyJSON(rawStr);
+
+	let dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(rawStr);
+
+	let docLink = null;
+	//Atach data to link
+	if (button == null || button == undefined) docLink = document.createElement('a');
+	else docLink = button;
+
+	docLink.setAttribute("href", dataStr);
+	docLink.setAttribute('download', name + '.json');
+	
+	if (button == null || button == undefined) {
+		document.body.appendChild(docLink);
+		//Automatically download
+		docLink.click();
+		document.body.removeChild(docLink);
+	}
 }
