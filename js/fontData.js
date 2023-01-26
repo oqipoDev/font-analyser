@@ -50,8 +50,8 @@ function extractFontData(font){
 	fontData.version = font.names.version.en;
 
 	
-	let macStyle = NumToPseudoBoolArray(font.tables.head.macStyle, 8);
-	let fsSelection = NumToPseudoBoolArray(font.tables.os2.fsSelection, 10);
+	let macStyle = NumToBoolArray(font.tables.head.macStyle, 8);
+	let fsSelection = NumToBoolArray(font.tables.os2.fsSelection, 10);
 	fontData.panoseStyle = font.tables.os2.panose;
 	fontData.IBMStyle = font.tables.os2.sFamilyClass;
 
@@ -109,7 +109,7 @@ function extractFontData(font){
 
 	if(font.tables.head.lowestRecPPEM) fontData.minSize = font.tables.head.lowestRecPPEM;
 
-	fontData.unicodeRange = NumToPseudoBoolArray(font.tables.os2.ulUnicodeRange1);
+	fontData.unicodeRange = NumToBoolArray(font.tables.os2.ulUnicodeRange1);
 	fontData.glyphNum = font.numGlyphs;
 
 	/* Measurements */
@@ -221,7 +221,7 @@ function objectToHTML(dataObject, firstHeading){
 			LoopObject(obj[objs[i]]);
 			h--;
 		}
-		text += `</ul>`
+		text += `</ul>`;
 	}
 	
 	text += "</p>";
@@ -269,18 +269,18 @@ function appendText(string, parentElement, clas){
 }
 
 /**
- * Transform a number into a **string array** representation of a _bit array_. Optionally pads with 0's
+ * Transform a number into a **bool array** representation of a _bit array_. Optionally pads with 0's
  * @param {number} num Number to convert
  * @param {number} places Number of places to pad with 0
  * @returns Array of strings
  */
-function NumToPseudoBoolArray(num, places){
+function NumToBoolArray(num, places){
 	let numToStr = num.toString(2);
+	
+	let arr = [];
 
-	let arr = []
-
-	for(let i = numToStr.length - 1; i >= 0; i--){
-		if (numToStr[i] == 1)
+	for(digit in numToStr){
+		if (numToStr[digit] == 1)
 			arr = arr.concat(true);
 		else arr = arr.concat(false);
 	}
@@ -291,7 +291,6 @@ function NumToPseudoBoolArray(num, places){
 			arr = arr.concat(false);
 		}
 	}
-	
 	return arr;
 }
 
