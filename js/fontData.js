@@ -70,16 +70,26 @@ function extractFontData(font){
 		return retAxis;
 	}
 	
+	/* ToDo slant */
+	var wd = false, wg = false, sl = false;
+
 	if(fontData.isVariable){
 		fontData.axes = [];
 		for(let i = 0; i < font.tables.fvar.axes.length; i++){
 			fontData.axes = fontData.axes.concat(getAxis(font.tables.fvar.axes[i]));
+			switch (font.tables.fvar.axes[i].tag){
+				case 'wght':
+					wg = true; break;
+				case 'wdth':
+					wd = true; break;
+			} 
 		}
 	}
-	else { /* Fixed fonts */
-		if (font.names.preferredSubfamily) fontData.styleName = font.names.preferredSubfamily.en;
-		else fontData.styleName = font.names.fontSubfamily.en;
-		
+	
+	if (font.names.preferredSubfamily) fontData.styleName = font.names.preferredSubfamily.en;
+	else fontData.styleName = font.names.fontSubfamily.en;
+	
+	if (!wg) { /* Fixed fonts */
 		fontData.weightClass = font.tables.os2.usWeightClass;
 
 		if (macStyle[0] && fsSelection[5])		fontData.weight = 'Bold'; 
@@ -88,17 +98,19 @@ function extractFontData(font){
 			warnings = warnings.concat('weig');
 		}
 		else fontData.weight = 'Regular';
+	}
+	
+	fontData.slantType = macStyle[1] + fsSelection[0];
 
-		fontData.slantType = macStyle[1] + fsSelection[0];
-
-		if (macStyle[1] && fsSelection[0])		fontData.slantType = 'Italic'; 
-		else if (macStyle[1] && fsSelection[9])		fontData.slantType = 'Oblique'; 
-		else if (macStyle[1] || fsSelection[0] || fsSelection[9]){
-			fontData.slantType = 'Italic';
-			warnings = warnings.concat('slnt');
-		}
-		else fontData.slantType = 'Roman';
-
+	if (macStyle[1] && fsSelection[0])		fontData.slantType = 'Italic'; 
+	else if (macStyle[1] && fsSelection[9])		fontData.slantType = 'Oblique'; 
+	else if (macStyle[1] || fsSelection[0] || fsSelection[9]){
+		fontData.slantType = 'Italic';
+		warnings = warnings.concat('slnt');
+	}
+	else fontData.slantType = 'Roman';
+	
+	if (!wd){
 		if (macStyle[5]) fontData.width = 'Condensed';
 		else if (macStyle[6]) fontData.width = 'Expanded';
 		else fontData.width = 'Normal';
