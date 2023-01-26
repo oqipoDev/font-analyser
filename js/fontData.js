@@ -323,3 +323,42 @@ function camelToDisplay(string){
 	}
 	return newString;
 }
+
+function prettifyJSON(str){
+	function newline(){
+		if (result[result.length - 1] == '\n') {
+			return;
+		}
+
+		result += '\n';
+		for (let i = 0; i < level; i++) {
+			result += '\t';
+		}
+		console.log(level);
+	}
+
+	let level = 0;
+	let result = "";
+	for(let i = 0; i < str.length; i++){
+		if (str[i] == '{' || str[i] == '['){
+			level++;
+			result += str[i];
+			newline();
+		}
+		else if (str[i] == '}' || str[i] == ']'){
+			level--;
+			newline();
+			result += str[i];
+		}
+		else if (str[i] == ',' ||
+		(str[i - 1] == '"' && str[i] == ':' && (str[i + 1] == '{' || str[i + 1] == '['))){
+			result += str[i];
+			newline();
+		}
+		else{
+			result += str[i];
+		}
+	}
+
+	return result;
+}
