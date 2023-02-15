@@ -323,3 +323,72 @@ function camelToDisplay(string){
 	}
 	return newString;
 }
+
+function prettifyJSON(str){
+	function newline(){
+		if (result[result.length - 1] == '\n') {
+			return;
+		}
+
+		result += '\n';
+		for (let i = 0; i < level; i++) {
+			result += '\t';
+		}
+	}
+
+	let level = 0;
+	let result = "";
+	for(let i = 0; i < str.length; i++){
+		if (str[i] == '{' || str[i] == '['){
+			level++;
+			result += str[i];
+			newline();
+		}
+		else if (str[i] == '}' || str[i] == ']'){
+			level--;
+			newline();
+			result += str[i];
+		}
+		else if (str[i] == ',' ||
+		(str[i - 1] == '"' && str[i] == ':' && (str[i + 1] == '{' || str[i + 1] == '['))){
+			result += str[i];
+			newline();
+		}
+		else{
+			result += str[i];
+		}
+	}
+	
+	return result;
+}
+
+/**
+ * Sets a download button for an object as a JSON file.
+ * Set _button_ param to _false_ to automatically download.
+ * @param {Object} obj Object to convert to JSON
+ * @param {String} name Name of file, no extension
+ * @param {Element} button _(optional)_ Download link or button
+ * @param {Boolean} prettify Format with line breaks and indentations.
+ */
+function saveObjectAsJSON(obj, name, button, prettify){
+	//Create data
+	let rawStr = JSON.stringify(obj);
+	if (prettify) rawStr = prettifyJSON(rawStr);
+
+	let dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(rawStr);
+
+	let docLink = null;
+	//Atach data to link
+	if (button == null || button == undefined) docLink = document.createElement('a');
+	else docLink = button;
+
+	docLink.setAttribute("href", dataStr);
+	docLink.setAttribute('download', name + '.json');
+	
+	if (button == null || button == undefined) {
+		document.body.appendChild(docLink);
+		//Automatically download
+		docLink.click();
+		document.body.removeChild(docLink);
+	}
+}
