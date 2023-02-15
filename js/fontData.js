@@ -30,20 +30,20 @@ function extractFontData(font){
 
 	/* NAMES */
 
-	/*ToDo accept other languages*/
+	/* ToDo accept other languages */
 	fontData.ID = font.names.uniqueID.en;
 	
 	if (font.names.preferredFamily) fontData.familyName = font.names.preferredFamily.en;
 	else fontData.fontFamily = font.names.fontFamily.en;
 	
-	fontData.designerName = font.names.designer.en;
+	if (font.names.designerName) fontData.designerName = font.names.designer.en;
 	if (font.names.designerURL) fontData.designerURL = font.names.designerURL.en;
-	fontData.foundryName = font.names.manufacturer.en;
+	if (font.names.foundryName) fontData.foundryName = font.names.manufacturer.en;
 	if (font.names.manufacturerURL) fontData.foundryURL = font.names.manufacturerURL.en;
 	if (font.names.copyright) fontData.copyright = font.names.copyright.en;
 	if (font.names.trademark) fontData.trademark = font.names.trademark.en;
 	fontData.licenseType = font.tables.os2.fsType;
-	fontData.license = font.names.license.en;
+	if (font.names.license) fontData.license = font.names.license.en;
 	if (font.names.licenseURL) fontData.licenseURL = font.names.licenseURL.en;
 	if (font.names.sampleText) fontData.sampleText = font.names.sampleText.en;
 	if (font.names.description) fontData.description = font.names.description.en;
