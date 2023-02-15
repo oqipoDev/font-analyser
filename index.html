@@ -6,7 +6,12 @@
 	<link rel="stylesheet" href="style.css">
 	<script src="OpenTypeJS/dist/opentype.js"></script>
 	<script src="js/fontData.js"></script>
+	<script src="js/fileReader.js"></script>
 	<script>
+		let licenses = [];
+		let descriptions = [];
+		let fontInfoArr = [];
+
 		async function StageFile(file){
 			let Reader = new FileReader();
 			let fileNames = document.querySelector('#fileNames');
@@ -15,16 +20,6 @@
 			for(let i = 0; i < file.files.length; i++){
 				fileNames.innerHTML += `${file.files[i].name}<br>`;
 			}
-			/*Read file
-			Reader.readAsArrayBuffer(file.files[0]);
-			Reader.onload = (event) => {
-				let fontFile = opentype.parse(event.target.result);
-				let fontInfo = extractFontData(fontFile);
-				appendText(objectToHTML(fontInfo), document.body);
-				//localStorage.setItem(font = fontFile);
-			};
-			};*/
-			sessionStorage.setItem('infoArr', '[]');
 			sendReader(file.files, 0);
 		}
 
@@ -38,22 +33,41 @@
 		}
 
 		function getFileBlob(event, fileList, i){
-			let infoArr = JSON.parse(sessionStorage.getItem('infoArr'));
 			let fontFile = opentype.parse(event.target.result);
 			let fontInfo = extractFontData(fontFile);
 
-			infoArr = infoArr.concat(fontInfo);
-			sessionStorage.setItem('infoArr', JSON.stringify(infoArr));
+			fontInfoArr = fontInfoArr.concat(fontInfo);
 			
 			sendReader(fileList, i + 1);
 		}
 		
 		function finishReading(){
-			console.log("success");
 			document.querySelector('#scanButton').disabled = false;
 			
-			let fontInfoArr = JSON.parse(sessionStorage.getItem('infoArr'));
+			/* Get redundant licenses and descriptions */
+			for (let i = 0; i < fontInfoArr.length; i++){
+				seekRedundant(i, "license", licenses);
+				seekRedundant(i, "description", descriptions);
+			}
+			console.log(licenses, descriptions);
 			appendText(objectToHTML(fontInfoArr), document.body);
+		}
+
+		function seekRedundant(index, key, list){
+			let isInList = false;
+			let current = fontInfoArr[index].fontData[key];
+
+			for (let j = 0; j < list.length; j++){
+				if (current == list[j]){
+					fontInfoArr[index].fontData[key] = j;
+					isInList = true;
+					break;
+				}
+			}
+			if (!isInList){
+				fontInfoArr[index].fontData[key] = list.length;
+				list[list.length] = current;
+			}
 		}
 	</script>
 </head>
