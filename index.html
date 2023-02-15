@@ -6,7 +6,6 @@
 	<link rel="stylesheet" href="style.css">
 	<script src="OpenTypeJS/dist/opentype.js"></script>
 	<script src="js/fontData.js"></script>
-	<script src="js/fileReader.js"></script>
 	<script>
 		let licenses = [];
 		let descriptions = [];
@@ -43,6 +42,7 @@
 		
 		function finishReading(){
 			/* Get redundant licenses and descriptions */
+			console.log(fontInfoArr);
 			for (let i = 0; i < fontInfoArr.length; i++){
 				seekRedundant(i, "license", licenses);
 				seekRedundant(i, "description", descriptions);
@@ -53,7 +53,6 @@
 			let button = document.querySelector('#downloadButton');
 			button.disabled = false;
 			
-			let fontInfoArr = JSON.parse(sessionStorage.getItem('infoArr'));
 			let textbox = document.createElement('textarea');
 			document.body.appendChild(textbox);
 			textbox.value = prettifyJSON(JSON.stringify(fontInfoArr));
